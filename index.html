@@ -57,21 +57,18 @@
   const WEBHOOK_URL = 'https://humzaautomates.app.n8n.cloud/webhook/flowstack-chat';
 
   function parseMarkdown(text) {
-    return text
-      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/^- (.+)$/gm, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
-      .replace(/\n{2,}/g, '</p><p>')
-      .replace(/\n/g, '<br>')
-      .replace(/---/g, '<hr>')
-      .replace(/^(.+)$/gm, (match) => {
-        if (match.startsWith('<')) return match;
-        return match;
-      });
+  return text
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^\* (.+)$/gm, '<li>$1</li>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>[^<]+<\/li>\n?)+/g, '<ul>$&</ul>')
+    .replace(/---/g, '<hr>')
+    .replace(/\n{2,}/g, '</p><p>')
+    .replace(/\n/g, '<br>');
   }
 
   async function sendMessage() {
