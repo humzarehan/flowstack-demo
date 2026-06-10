@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FlowStack Support</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+    body { background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .chat-container { width: 380px; background: white; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); overflow: hidden; display: flex; flex-direction: column; height: 560px; }
+    .chat-header { background: #1a1a2e; padding: 16px; display: flex; align-items: center; gap: 12px; }
+    .avatar { width: 40px; height: 40px; background: #534AB7; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 18px; }
+    .company { color: white; font-weight: 600; font-size: 15px; }
+    .status { color: #5DCAA5; font-size: 12px; margin-top: 2px; }
+    .chat-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    .message { display: flex; }
+    .message.user { justify-content: flex-end; }
+    .bubble { max-width: 80%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
+    .message.bot .bubble { background: #f0f2f5; color: #1a1a2e; border-bottom-left-radius: 4px; }
+    .message.user .bubble { background: #534AB7; color: white; border-bottom-right-radius: 4px; }
+    .typing .bubble { color: #999; font-style: italic; }
+    .chat-input { padding: 12px 16px; border-top: 1px solid #f0f2f5; display: flex; gap: 8px; }
+    .chat-input input { flex: 1; border: 1.5px solid #e0e0e0; border-radius: 24px; padding: 10px 16px; font-size: 14px; outline: none; font-family: inherit; }
+    .chat-input input:focus { border-color: #534AB7; }
+    .chat-input button { background: #534AB7; color: white; border: none; border-radius: 24px; padding: 10px 20px; font-size: 14px; cursor: pointer; font-family: inherit; font-weight: 500; }
+    .chat-input button:hover { background: #3C3489; }
+    .bubble p { margin-bottom: 8px; }
+    .bubble p:last-child { margin-bottom: 0; }
+    .bubble ul, .bubble ol { padding-left: 16px; margin: 4px 0; }
+    .bubble li { margin-bottom: 4px; }
+    .bubble strong { font-weight: 600; }
+    .bubble h1, .bubble h2, .bubble h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .bubble hr { border: none; border-top: 1px solid #ddd; margin: 8px 0; }
+  </style>
+</head>
+<body>
+<div class="chat-container">
+  <div class="chat-header">
+    <div class="avatar">F</div>
+    <div>
+      <div class="company">FlowStack Support</div>
+      <div class="status">● Online — replies instantly</div>
+    </div>
+  </div>
+  <div class="chat-messages" id="messages">
+    <div class="message bot">
+      <div class="bubble">Hi! I'm FlowStack's support assistant. Ask me anything about our plans, features, or getting started.</div>
+    </div>
+  </div>
+  <div class="chat-input">
+    <input type="text" id="userInput" placeholder="Type your message..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<script>
+  const WEBHOOK_URL = 'https://humzaautomates.app.n8n.cloud/webhook-test/flowstack-chat';
+
+  function parseMarkdown(text) {
+    return text
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+      .replace(/\n{2,}/g, '</p><p>')
+      .replace(/\n/g, '<br>')
+      .replace(/---/g, '<hr>')
+      .replace(/^(.+)$/gm, (match) => {
+        if (match.startsWith('<')) return match;
+        return match;
+      });
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('userInput');
+    const messages = document.getElementById('messages');
+    const text = input.value.trim();
+    if (!text) return;
+
+    messages.innerHTML += `
+      <div class="message user">
+        <div class="bubble">${text}</div>
+      </div>`;
+    input.value = '';
+
+    messages.innerHTML += `
+      <div class="message bot typing" id="typing">
+        <div class="bubble">FlowStack is typing...</div>
+      </div>`;
+    messages.scrollTop = messages.scrollHeight;
+
+    try {
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      const rawText = await response.text();
+
+      document.getElementById('typing').remove();
+      messages.innerHTML += `
+        <div class="message bot">
+          <div class="bubble"><p>${parseMarkdown(rawText)}</p></div>
+        </div>`;
+    } catch (error) {
+      document.getElementById('typing').remove();
+      messages.innerHTML += `
+        <div class="message bot">
+          <div class="bubble">Sorry, something went wrong. Please try again.</div>
+        </div>`;
+    }
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  document.getElementById('userInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') sendMessage();
+  });
+</script>
+</body>
+</html>
